@@ -38,8 +38,8 @@ public class PatientManageFrame extends JFrame {
     // 性别输入框
     private JTextField genderField;
 
-    // 年龄输入框
-    private JTextField ageField;
+    // 出生日期输入框
+    private JTextField birthDateField;
 
     // 手机号输入框
     private JTextField phoneField;
@@ -91,7 +91,7 @@ public class PatientManageFrame extends JFrame {
                 "患者编号",
                 "姓名",
                 "性别",
-                "年龄",
+                "出生日期",
                 "手机号",
                 "身份证号",
                 "创建时间"
@@ -118,14 +118,14 @@ public class PatientManageFrame extends JFrame {
         JPanel bottomPanel = new JPanel(new BorderLayout());
 
         // 输入区面板，使用 GridLayout
-        JPanel inputPanel = new JPanel(new GridLayout(2, 6, 10, 10));
+        JPanel inputPanel = new JPanel(new GridLayout(2, 7, 10, 10));
         inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
         // 创建输入框
         patientIdField = new JTextField();
         nameField = new JTextField();
         genderField = new JTextField();
-        ageField = new JTextField();
+        birthDateField = new JTextField();
         phoneField = new JTextField();
         idCardField = new JTextField();
 
@@ -136,15 +136,16 @@ public class PatientManageFrame extends JFrame {
         inputPanel.add(new JLabel("患者编号"));
         inputPanel.add(new JLabel("姓名"));
         inputPanel.add(new JLabel("性别"));
-        inputPanel.add(new JLabel("年龄"));
+        inputPanel.add(new JLabel("出生日期"));
         inputPanel.add(new JLabel("手机号"));
         inputPanel.add(new JLabel("身份证号"));
+
 
         // 第二行：输入框
         inputPanel.add(patientIdField);
         inputPanel.add(nameField);
         inputPanel.add(genderField);
-        inputPanel.add(ageField);
+        inputPanel.add(birthDateField);
         inputPanel.add(phoneField);
         inputPanel.add(idCardField);
 
@@ -210,12 +211,14 @@ public class PatientManageFrame extends JFrame {
         // 清空表格原有数据
         tableModel.setRowCount(0);
 
+        //IMESTAMPDIFF(unit, datetime_expr1, datetime_expr2)
+        // 返回 datetime_expr2 - datetime_expr1 之间相差的指定 unit（时间单位）的整数数量。
         String sql = """
                 SELECT
                     patient_id,
                     name,
                     gender,
-                    age,
+                    birth_date,
                     phone,
                     id_card,
                     create_time
@@ -239,7 +242,7 @@ public class PatientManageFrame extends JFrame {
                         rs.getInt("patient_id"),
                         rs.getString("name"),
                         rs.getString("gender"),
-                        rs.getInt("age"),
+                        rs.getDate("birth_date"),
                         rs.getString("phone"),
                         rs.getString("id_card"),
                         rs.getTimestamp("create_time")
@@ -262,7 +265,7 @@ public class PatientManageFrame extends JFrame {
         // 获取输入框内容
         String name = nameField.getText().trim();
         String gender = genderField.getText().trim();
-        String ageText = ageField.getText().trim();
+        String birthDate = birthDateField.getText().trim();
         String phone = phoneField.getText().trim();
         String idCard = idCardField.getText().trim();
 
@@ -273,26 +276,19 @@ public class PatientManageFrame extends JFrame {
         }
 
         // 简单校验：年龄不能为空
-        if (ageText.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "年龄不能为空");
+        if (birthDate.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "出生日期不能为空");
             return;
         }
 
-        int age;
 
-        try {
-            age = Integer.parseInt(ageText);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "年龄必须是数字");
-            return;
-        }
 
         String sql = """
-                INSERT INTO patient(name, gender, age, phone, id_card)
+                INSERT INTO patient(name, gender, birth_date, phone, id_card)
                 VALUES (?, ?, ?, ?, ?)
                 """;
 
-        int rows = JdbcUtil.update(sql, name, gender, age, phone, idCard);
+        int rows = JdbcUtil.update(sql, name, gender, birthDate, phone, idCard);
 
         if (rows > 0) {
             JOptionPane.showMessageDialog(this, "添加患者成功");
@@ -320,7 +316,7 @@ public class PatientManageFrame extends JFrame {
 
         String name = nameField.getText().trim();
         String gender = genderField.getText().trim();
-        String ageText = ageField.getText().trim();
+        String birthDate = birthDateField.getText().trim();
         String phone = phoneField.getText().trim();
         String idCard = idCardField.getText().trim();
 
@@ -329,17 +325,21 @@ public class PatientManageFrame extends JFrame {
             return;
         }
 
-        if (ageText.isEmpty()) {
+        if (birthDate.isEmpty()) {
             JOptionPane.showMessageDialog(this, "年龄不能为空");
             return;
         }
 
+        // 格式校验
+        if (!birthDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            JOptionPane.showMessageDialog(this, "格式必须是 YYYY-MM-DD");
+            return;
+        }
+
         int patientId;
-        int age;
 
         try {
             patientId = Integer.parseInt(patientIdText);
-            age = Integer.parseInt(ageText);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "患者编号或年龄格式错误");
             return;
@@ -349,13 +349,13 @@ public class PatientManageFrame extends JFrame {
                 UPDATE patient
                 SET name = ?,
                     gender = ?,
-                    age = ?,
+                    birth_date = ?,
                     phone = ?,
                     id_card = ?
                 WHERE patient_id = ?
                 """;
 
-        int rows = JdbcUtil.update(sql, name, gender, age, phone, idCard, patientId);
+        int rows = JdbcUtil.update(sql, name, gender, birthDate, phone, idCard, patientId);
 
         if (rows > 0) {
             JOptionPane.showMessageDialog(this, "修改患者成功");
@@ -389,7 +389,7 @@ public class PatientManageFrame extends JFrame {
         }
 
         int patientId;
-
+        //删除关联数据
         try {
             patientId = Integer.parseInt(patientIdText);
         } catch (Exception e) {
@@ -397,17 +397,100 @@ public class PatientManageFrame extends JFrame {
             return;
         }
 
-        String sql = "DELETE FROM patient WHERE patient_id = ?";
+        try(
+                Connection conn = DBUtil.getConnection()
+        ) {
 
-        int rows = JdbcUtil.update(sql, patientId);
+            /**
+             * 第一步：
+             * 删除缴费记录 payment
+             */
+            String sql1 = """
+            DELETE FROM payment
+            WHERE reg_id IN(
+                SELECT reg_id
+                FROM registration
+                WHERE patient_id=?
+            )
+            """;
 
-        if (rows > 0) {
-            JOptionPane.showMessageDialog(this, "删除患者成功");
-            loadPatientData();
-            clearInput();
-        } else {
-            JOptionPane.showMessageDialog(this, "删除患者失败");
+            JdbcUtil.update(conn, sql1, patientId);
+
+
+            /**
+             * 第二步：
+             * 删除就诊记录 medical_record
+             */
+            String sql2 = """
+            DELETE FROM medical_record
+            WHERE reg_id IN(
+                SELECT reg_id
+                FROM registration
+                WHERE patient_id=?
+            )
+            """;
+
+            JdbcUtil.update(conn, sql2, patientId);
+
+
+            /**
+             * 第三步：
+             * 删除挂号记录 registration
+             */
+            String sql3 = """
+            DELETE FROM registration
+            WHERE patient_id=?
+            """;
+
+            JdbcUtil.update(conn, sql3, patientId);
+
+
+            /**
+             * 第四步：
+             * 删除患者 patient
+             */
+            String sql4 = """
+            DELETE FROM patient
+            WHERE patient_id=?
+            """;
+
+            int rows = JdbcUtil.update(
+                    conn,
+                    sql4,
+                    patientId
+            );
+
+
+            if(rows>0){
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "删除成功"
+                );
+
+                loadPatientData();
+
+                clearInput();
+
+            }else{
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "删除失败"
+                );
+            }
+
+        }catch (Exception e){
+
+            e.printStackTrace();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "删除失败："+e.getMessage()
+            );
         }
+
+
     }
 
     /**
@@ -425,7 +508,7 @@ public class PatientManageFrame extends JFrame {
         Object patientId = tableModel.getValueAt(selectedRow, 0);
         Object name = tableModel.getValueAt(selectedRow, 1);
         Object gender = tableModel.getValueAt(selectedRow, 2);
-        Object age = tableModel.getValueAt(selectedRow, 3);
+        Object birthDate = tableModel.getValueAt(selectedRow, 3);
         Object phone = tableModel.getValueAt(selectedRow, 4);
         Object idCard = tableModel.getValueAt(selectedRow, 5);
 
@@ -433,7 +516,7 @@ public class PatientManageFrame extends JFrame {
         patientIdField.setText(patientId == null ? "" : patientId.toString());
         nameField.setText(name == null ? "" : name.toString());
         genderField.setText(gender == null ? "" : gender.toString());
-        ageField.setText(age == null ? "" : age.toString());
+        birthDateField.setText(birthDate == null ? "" : birthDate.toString());
         phoneField.setText(phone == null ? "" : phone.toString());
         idCardField.setText(idCard == null ? "" : idCard.toString());
     }
@@ -445,7 +528,7 @@ public class PatientManageFrame extends JFrame {
         patientIdField.setText("");
         nameField.setText("");
         genderField.setText("");
-        ageField.setText("");
+        birthDateField.setText("");
         phoneField.setText("");
         idCardField.setText("");
 

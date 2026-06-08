@@ -287,9 +287,13 @@ public class LoginFrame extends JFrame {
                     // 关闭登录窗口
                     this.dispose();
 
-                    // 打开主界面
-//                   new MainFrame(adminId, realName, role);
-                    new MainFrame();
+                    // 如果是超级管理员，进入用户管理页面
+                    if ("super_admin".equals(role)) {
+                        new UserManageFrame(adminId, realName, role);
+                    } else {
+                        // 普通管理员进入主界面
+                        new MainFrame();
+                    }
 
                 } else {
                     // 没有查到数据，说明账号密码错误或者账号被禁用
